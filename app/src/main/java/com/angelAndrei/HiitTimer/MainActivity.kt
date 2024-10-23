@@ -51,6 +51,8 @@ fun Counter(modifier: Modifier = Modifier) {
     var currentCycle by remember { mutableStateOf(1) }
     var isResting by remember { mutableStateOf(false) }
     var timerRunning by remember { mutableStateOf(false) }
+    var isWorking by remember { mutableStateOf(false) }
+    var isSettings by remember { mutableStateOf(false) }
 
     // Estado del temporizador
     var miConterDown by remember {
