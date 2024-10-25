@@ -1,5 +1,6 @@
 package com.angelAndrei.HiitTimer
 
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -62,7 +63,8 @@ fun Counter(modifier: Modifier = Modifier) {
     var mostrarPantallaGetReady by remember { mutableStateOf(false) }
     var mostrarPantallaWork by remember { mutableStateOf(false) }
     var mostrarPantallaRest by remember { mutableStateOf(false) }
-
+    var mediaPlayer = MediaPlayer.create(context, R.raw.sound_file_1)
+//    mediaPlayer.start()
     var miConterDown by remember {
         mutableStateOf(CounterDown(countdownTime) { newValue -> theCounter = newValue })
     }
