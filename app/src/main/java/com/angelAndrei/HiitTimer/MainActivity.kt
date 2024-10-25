@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,7 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.angelAndrei.HiitTimer.ui.theme.HiitTimerTheme
+
+var counterState : Boolean = false
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,14 +50,19 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Counter(modifier: Modifier = Modifier) {
     var theCounter by remember { mutableStateOf(0L) }
-    var countdownTime by remember { mutableStateOf(0) }
-    var restTime by remember { mutableStateOf(0) }
-    var cycleCount by remember { mutableStateOf(1) }
+    var countdownTime by remember { mutableStateOf(30) }
+    var restTime by remember { mutableStateOf(10) }
+    var cycleCount by remember { mutableStateOf(4) }
     var currentCycle by remember { mutableStateOf(1) }
     var isResting by remember { mutableStateOf(false) }
     var timerRunning by remember { mutableStateOf(false) }
 
-    // Estado del temporizador
+    // Estados de visibilidad de las pantallas
+    var mostrarPantallaConfiguracion by remember { mutableStateOf(true) }
+    var mostrarPantallaGetReady by remember { mutableStateOf(false) }
+    var mostrarPantallaWork by remember { mutableStateOf(false) }
+    var mostrarPantallaRest by remember { mutableStateOf(false) }
+
     var miConterDown by remember {
         mutableStateOf(CounterDown(countdownTime) { newValue -> theCounter = newValue })
     }
@@ -64,141 +74,70 @@ fun Counter(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Ciclo: $currentCycle / $cycleCount", modifier = Modifier.padding(bottom = 16.dp))
-        Text(text = if (isResting) "Descanso: $theCounter s" else "Tiempo: $theCounter s", modifier = modifier)
-
-        TimerAdjustmentControls(
-            countdownTime = countdownTime,
-            restTime = restTime,
-            cycleCount = cycleCount,
-            onCountdownChange = { countdownTime = it },
-            onRestChange = { restTime = it },
-            onCycleChange = { cycleCount = it }
-        )
-
-        TimerControlButtons(
-            isResting = isResting,
-            timerRunning = timerRunning,
-            miConterDown = miConterDown,
-            theCounter = theCounter,
-            countdownTime = countdownTime,
-            restTime = restTime,
-            cycleCount = cycleCount,
-            currentCycle = currentCycle,
-            onCounterUpdate = { newCounterDown -> miConterDown = newCounterDown },
-            onCurrentCycleUpdate = { currentCycle = it },
-            onRestingUpdate = { isResting = it },
-            onTimerRunningUpdate = { timerRunning = it },
-            onCounterValueUpdate = { theCounter = it }
-        )
-    }
-}
-
-// Función para manejar los controles de ajuste de tiempo
-@Composable
-fun TimerAdjustmentControls(
-    countdownTime: Int,
-    restTime: Int,
-    cycleCount: Int,
-    onCountdownChange: (Int) -> Unit,
-    onRestChange: (Int) -> Unit,
-    onCycleChange: (Int) -> Unit
-) {
-    Column {
-        // Controles para ajustar el tiempo de trabajo
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = { if (countdownTime > 1) onCountdownChange(countdownTime - 1) }) {
-                Text(text = "-1s")
-            }
-            Text(text = "Tiempo: $countdownTime s", modifier = Modifier.padding(horizontal = 8.dp))
-            Button(onClick = { onCountdownChange(countdownTime + 1) }) {
-                Text(text = "+1s")
-            }
+        if (mostrarPantallaConfiguracion) {
+            PantallaConfiguracion(
+                countdownTime = countdownTime,
+                restTime = restTime,
+                cycleCount = cycleCount,
+                onConfigChange = { newWorkTime, newRestTime, newCycleCount ->
+                    countdownTime = newWorkTime
+                    restTime = newRestTime
+                    cycleCount = newCycleCount
+                },
+                onStart = {
+                    mostrarPantallaConfiguracion = false
+                    mostrarPantallaGetReady = true
+                }
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Controles para ajustar el tiempo de descanso
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = { if (restTime > 1) onRestChange(restTime - 1) }) {
-                Text(text = "-1s")
-            }
-            Text(text = "Descanso: $restTime s", modifier = Modifier.padding(horizontal = 8.dp))
-            Button(onClick = { onRestChange(restTime + 1) }) {
-                Text(text = "+1s")
-            }
+        if (mostrarPantallaGetReady) {
+            PantallaGetReady(
+                currentCycle = currentCycle,
+                cycleCount = cycleCount,
+                time = theCounter,
+                miConterDown = miConterDown,
+                onStart = {
+                    mostrarPantallaGetReady = false
+                    mostrarPantallaWork = true
+                    startWorkCycle(
+                        countdownTime,
+                        restTime,
+                        currentCycle,
+                        cycleCount,
+                        onCounterUpdate = { miConterDown = it },
+                        onRestingUpdate = { isResting = it },
+                        onCurrentCycleUpdate = { currentCycle = it },
+                        onCounterValueUpdate = { theCounter = it },
+                        onTimerRunningUpdate = { timerRunning = it },
+                        onMostrarPantallaWorkUpdate = { mostrarPantallaWork = it },
+                        onMostrarPantallaRestUpdate = { mostrarPantallaRest = it },
+                        onMostrarPantallaConfiguracionUpdate = { mostrarPantallaConfiguracion = it }
+                    )
+                }
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Controles para ajustar el número de ciclos
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = { if (cycleCount > 1) onCycleChange(cycleCount - 1) }) {
-                Text(text = "-1 ciclo")
-            }
-            Text(text = "Ciclos: $cycleCount", modifier = Modifier.padding(horizontal = 8.dp))
-            Button(onClick = { onCycleChange(cycleCount + 1) }) {
-                Text(text = "+1 ciclo")
-            }
+        if (mostrarPantallaWork) {
+            PantallaWork(
+                currentCycle = currentCycle,
+                cycleCount = cycleCount,
+                time = theCounter,
+                miConterDown = miConterDown
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-    }
-}
-
-// Función para manejar los botones de control del temporizador
-@Composable
-fun TimerControlButtons(
-    isResting: Boolean,
-    timerRunning: Boolean,
-    miConterDown: CounterDown,
-    theCounter: Long,
-    countdownTime: Int,
-    restTime: Int,
-    cycleCount: Int,
-    currentCycle: Int,
-    onCounterUpdate: (CounterDown) -> Unit,
-    onCurrentCycleUpdate: (Int) -> Unit,
-    onRestingUpdate: (Boolean) -> Unit,
-    onTimerRunningUpdate: (Boolean) -> Unit,
-    onCounterValueUpdate: (Long) -> Unit
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-        // Botón para pausar/reanudar el temporizador
-        Button(onClick = {
-            if (!timerRunning) {
-                startWorkCycle(
-                    countdownTime = countdownTime,
-                    restTime = restTime,
-                    currentCycle = currentCycle,
-                    totalCycles = cycleCount,
-                    onCounterUpdate = onCounterUpdate,
-                    onRestingUpdate = onRestingUpdate,
-                    onCurrentCycleUpdate = onCurrentCycleUpdate,
-                    onCounterValueUpdate = onCounterValueUpdate,
-                    onTimerRunningUpdate = onTimerRunningUpdate
-                )
-            } else {
-                miConterDown.toggle()
-            }
-        }) {
-            Text(text = if (isResting) "Pausar Descanso" else "Pulsar")
-        }
-
-        // Botón para reiniciar el temporizador y manejar el ciclo completo
-        Button(onClick = {
-            miConterDown.cancel()
-            onCounterValueUpdate(0L)
-            onRestingUpdate(false)
-            onCurrentCycleUpdate(1)
-            onTimerRunningUpdate(false)
-        }) {
-            Text(text = "Reset")
+        if (mostrarPantallaRest) {
+            PantallaRest(
+                currentCycle = currentCycle,
+                cycleCount = cycleCount,
+                time = theCounter,
+                miConterDown = miConterDown
+            )
         }
     }
 }
 
-// Función para iniciar el ciclo de trabajo y descanso
 fun startWorkCycle(
     countdownTime: Int,
     restTime: Int,
@@ -208,7 +147,10 @@ fun startWorkCycle(
     onRestingUpdate: (Boolean) -> Unit,
     onCurrentCycleUpdate: (Int) -> Unit,
     onCounterValueUpdate: (Long) -> Unit,
-    onTimerRunningUpdate: (Boolean) -> Unit
+    onTimerRunningUpdate: (Boolean) -> Unit,
+    onMostrarPantallaWorkUpdate: (Boolean) -> Unit,
+    onMostrarPantallaRestUpdate: (Boolean) -> Unit,
+    onMostrarPantallaConfiguracionUpdate: (Boolean) -> Unit
 ) {
     onTimerRunningUpdate(true)
 
@@ -216,14 +158,21 @@ fun startWorkCycle(
         onCounterValueUpdate(workValue)
         if (workValue == 0L) {
             onRestingUpdate(true)
+            onMostrarPantallaWorkUpdate(false)
+            onMostrarPantallaRestUpdate(true)
+
             val restCounter = CounterDown(restTime) { restValue ->
                 onCounterValueUpdate(restValue)
                 if (restValue == 0L) {
                     onRestingUpdate(false)
+                    onMostrarPantallaRestUpdate(false)
+
                     val nextCycle = currentCycle + 1
                     if (nextCycle <= totalCycles) {
                         onCurrentCycleUpdate(nextCycle)
-                        // Solo después de descansar, comienza el siguiente ciclo de trabajo
+                        onMostrarPantallaWorkUpdate(true)
+
+                        // Iniciar el próximo ciclo de trabajo después del descanso
                         startWorkCycle(
                             countdownTime,
                             restTime,
@@ -233,10 +182,15 @@ fun startWorkCycle(
                             onRestingUpdate,
                             onCurrentCycleUpdate,
                             onCounterValueUpdate,
-                            onTimerRunningUpdate
+                            onTimerRunningUpdate,
+                            onMostrarPantallaWorkUpdate,
+                            onMostrarPantallaRestUpdate,
+                            onMostrarPantallaConfiguracionUpdate
                         )
                     } else {
+                        // Finaliza los ciclos y regresa a la pantalla de configuración
                         onTimerRunningUpdate(false)
+                        onMostrarPantallaConfiguracionUpdate(true)
                     }
                 }
             }
@@ -247,6 +201,152 @@ fun startWorkCycle(
     onCounterUpdate(workCounter)
     workCounter.start()
 }
+
+
+@Composable
+fun PantallaConfiguracion(
+    countdownTime: Int,
+    restTime: Int,
+    cycleCount: Int,
+    onConfigChange: (Int, Int, Int) -> Unit,
+    onStart: () -> Unit
+) {
+    var workTimeInput by remember { mutableStateOf(countdownTime.toString()) }
+    var restTimeInput by remember { mutableStateOf(restTime.toString()) }
+    var cycleCountInput by remember { mutableStateOf(cycleCount.toString()) }
+
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "Configurar HiitTimer", fontSize = 30.sp, modifier = Modifier.padding(bottom = 16.dp))
+
+        Text(text = "Tiempo de trabajo (s):", fontSize = 20.sp)
+        BasicTextField(
+            value = workTimeInput,
+            onValueChange = { workTimeInput = it },
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        )
+
+        Text(text = "Tiempo de descanso (s):", fontSize = 20.sp)
+        BasicTextField(
+            value = restTimeInput,
+            onValueChange = { restTimeInput = it },
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        )
+
+        Text(text = "Número de ciclos:", fontSize = 20.sp)
+        BasicTextField(
+            value = cycleCountInput,
+            onValueChange = { cycleCountInput = it },
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        )
+
+        Button(
+            onClick = {
+                onConfigChange(
+                    workTimeInput.toIntOrNull() ?: countdownTime,
+                    restTimeInput.toIntOrNull() ?: restTime,
+                    cycleCountInput.toIntOrNull() ?: cycleCount
+                )
+                onStart()
+            },
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text(text = "Comenzar")
+        }
+    }
+}
+
+@Composable
+fun PantallaGetReady(
+    currentCycle: Int,
+    cycleCount: Int,
+    time: Long,
+    miConterDown: CounterDown,
+    onStart: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Ciclo: $currentCycle / $cycleCount",
+            fontSize = 30.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Text(
+            text = "Prepararse: ${time}s",
+            fontSize = 40.sp
+        )
+        Button(onClick = { onStart() }) {
+            Text(text = "Iniciar")
+        }
+    }
+}
+
+@Composable
+fun PantallaWork(
+    currentCycle: Int,
+    cycleCount: Int,
+    time: Long,
+    miConterDown: CounterDown
+) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Ciclo: $currentCycle / $cycleCount",
+            fontSize = 30.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Text(
+            text = "Trabajo: ${time}s",
+            fontSize = 40.sp
+        )
+        Button(onClick = { miConterDown.toggle() }) {
+            Text(text = if (miConterDown.counterState) "Pausar" else "Reanudar")
+        }
+    }
+}
+
+@Composable
+fun PantallaRest(
+    currentCycle: Int,
+    cycleCount: Int,
+    time: Long,
+    miConterDown: CounterDown
+) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Ciclo: $currentCycle / $cycleCount",
+            fontSize = 30.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Text(
+            text = "Descanso: ${time}s",
+            fontSize = 40.sp
+        )
+        Button(onClick = { miConterDown.toggle() }) {
+            Text(text = if (miConterDown.counterState) "Pausar" else "Reanudar")
+        }
+    }
+}
+
+
+
+
+
 
 @Preview(showBackground = true)
 @Composable
