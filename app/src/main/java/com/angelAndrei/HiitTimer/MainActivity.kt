@@ -47,9 +47,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Counter(modifier: Modifier = Modifier, context: Context) {
     var theCounter by remember { mutableStateOf(0L) }
-    var countdownTime by remember { mutableStateOf(30) }
+    var countdownTime by remember { mutableStateOf(10) }
     var restTime by remember { mutableStateOf(10) }
-    var cycleCount by remember { mutableStateOf(4) }
+    var cycleCount by remember { mutableStateOf(1) }
     var currentCycle by remember { mutableStateOf(1) }
     var isResting by remember { mutableStateOf(false) }
     var timerRunning by remember { mutableStateOf(false) }
