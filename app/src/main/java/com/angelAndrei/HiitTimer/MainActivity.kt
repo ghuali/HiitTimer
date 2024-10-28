@@ -79,6 +79,7 @@ fun Counter(modifier: Modifier = Modifier, context: Context) {
                 onConfigChange = { newWorkTime, newRestTime, newCycleCount ->
                     countdownTime = newWorkTime
                     restTime = newRestTime
+                    currentCycle = 1
                     cycleCount = newCycleCount
                 },
                 onStart = {
@@ -121,7 +122,13 @@ fun Counter(modifier: Modifier = Modifier, context: Context) {
                 currentCycle = currentCycle,
                 cycleCount = cycleCount,
                 time = theCounter,
-                miConterDown = miConterDown
+                miConterDown = miConterDown,
+                onReset = {
+                    mostrarPantallaConfiguracion = true
+                    mostrarPantallaWork = false
+                    mostrarPantallaRest = false
+                    miConterDown.cancel()
+                }
             )
         }
 
@@ -130,7 +137,13 @@ fun Counter(modifier: Modifier = Modifier, context: Context) {
                 currentCycle = currentCycle,
                 cycleCount = cycleCount,
                 time = theCounter,
-                miConterDown = miConterDown
+                miConterDown = miConterDown,
+                onReset = {
+                    mostrarPantallaConfiguracion = true
+                    mostrarPantallaWork = false
+                    mostrarPantallaRest = false
+                    miConterDown.cancel()
+                }
             )
         }
     }
@@ -303,7 +316,8 @@ fun PantallaWork(
     currentCycle: Int,
     cycleCount: Int,
     time: Long,
-    miConterDown: CounterDown
+    miConterDown: CounterDown,
+    onReset: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -322,6 +336,12 @@ fun PantallaWork(
             Text(text = if (miConterDown.counterState) "Pausar" else "Reanudar")
             Log.i("cosita","pausamos")
         }
+        Button(onClick = {
+            miConterDown.cancel()
+            onReset()
+        }) {
+            Text(text = "Reiniciar")
+        }
     }
 }
 
@@ -330,7 +350,8 @@ fun PantallaRest(
     currentCycle: Int,
     cycleCount: Int,
     time: Long,
-    miConterDown: CounterDown
+    miConterDown: CounterDown,
+    onReset: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -348,6 +369,12 @@ fun PantallaRest(
         Button(onClick = { miConterDown.toggle() }) {
             Text(text = if (miConterDown.counterState) "Pausar" else "Reanudar")
             Log.i("cosita","pausamos")
+        }
+        Button(onClick = {
+            miConterDown.cancel()
+            onReset()
+        }) {
+            Text(text = "Reiniciar")
         }
     }
 }
