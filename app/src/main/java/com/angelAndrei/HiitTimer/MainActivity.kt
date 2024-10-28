@@ -3,6 +3,7 @@ package com.angelAndrei.HiitTimer
 import android.content.Context
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -264,6 +265,7 @@ fun PantallaConfiguracion(
             modifier = Modifier.padding(top = 16.dp)
         ) {
             Text(text = "Comenzar")
+            Log.i("cosita","Comienza todo despues de settings")
         }
     }
 }
@@ -291,6 +293,7 @@ fun PantallaGetReady(
         )
         Button(onClick = { onStart() }) {
             Text(text = "Iniciar")
+            Log.i("cosita","Prepararse works")
         }
     }
 }
@@ -317,6 +320,7 @@ fun PantallaWork(
         )
         Button(onClick = { miConterDown.toggle() }) {
             Text(text = if (miConterDown.counterState) "Pausar" else "Reanudar")
+            Log.i("cosita","pausamos")
         }
     }
 }
@@ -343,6 +347,7 @@ fun PantallaRest(
         )
         Button(onClick = { miConterDown.toggle() }) {
             Text(text = if (miConterDown.counterState) "Pausar" else "Reanudar")
+            Log.i("cosita","pausamos")
         }
     }
 }
