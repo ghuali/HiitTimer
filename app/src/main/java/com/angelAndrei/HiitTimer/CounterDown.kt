@@ -2,41 +2,50 @@ package com.angelAndrei.HiitTimer
 
 import android.os.CountDownTimer
 import android.util.Log
-import androidx.compose.runtime.Composable
 
 class CounterDown(var segundos: Int, var loquehacealhacertick: (Long) -> Unit) {
-    var counterState : Boolean = false
+    var counterState: Boolean = false
+    private var myCounter: CountDownTimer? = null
 
-    val myCounter = object : CountDownTimer((segundos * 1000L), 1000) {
+    // Inicializa el CountDownTimer
+    private fun createCounter() {
+        myCounter = object : CountDownTimer((segundos * 1000L), 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                if (counterState) loquehacealhacertick(millisUntilFinished / 1000)
+            }
 
-        override fun onTick(millisUntilFinished: Long) {
-            if (counterState) loquehacealhacertick(millisUntilFinished / 1000)
-        }
-
-        override fun onFinish() {
-            counterState = false
-            Log.i("dam2", "mensajito")
+            override fun onFinish() {
+                counterState = false
+                Log.i("dam2", "El temporizador ha terminado")
+            }
         }
     }
 
-    fun toggle() {
-        Log.i("dam2", "toggle: $counterState")
-        if (this.counterState){
-            this.cancel()
+    init {
+        createCounter()
+    }
 
+    fun toggle() {
+        Log.i("dam2", "Toggle llamado, estado actual: $counterState")
+        if (counterState) {
+            cancel()
         } else {
-            Log.i("dam2", "toggle: start")
-            this.start()
+            start()
         }
     }
 
     fun start() {
-        counterState = true
-        this.myCounter.start()
+        if (!counterState) {
+            createCounter()  // Crear un nuevo contador cada vez que comienza
+            counterState = true
+            myCounter?.start()
+            Log.i("dam2", "Temporizador iniciado")
+        }
     }
 
     fun cancel() {
         counterState = false
-        this.myCounter.cancel()
+        myCounter?.cancel()
+        Log.i("dam2", "Temporizador detenido")
     }
 }

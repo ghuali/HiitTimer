@@ -1,18 +1,15 @@
 package com.angelAndrei.HiitTimer
 
+import android.content.Context
 import android.media.MediaPlayer
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
@@ -25,12 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.angelAndrei.HiitTimer.ui.theme.HiitTimerTheme
-
-var counterState : Boolean = false
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +34,8 @@ class MainActivity : ComponentActivity() {
             HiitTimerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Counter(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding),
+                        context = this
                     )
                 }
             }
@@ -49,7 +44,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Counter(modifier: Modifier = Modifier) {
+fun Counter(modifier: Modifier = Modifier, context: Context) {
     var theCounter by remember { mutableStateOf(0L) }
     var countdownTime by remember { mutableStateOf(30) }
     var restTime by remember { mutableStateOf(10) }
@@ -63,8 +58,7 @@ fun Counter(modifier: Modifier = Modifier) {
     var mostrarPantallaGetReady by remember { mutableStateOf(false) }
     var mostrarPantallaWork by remember { mutableStateOf(false) }
     var mostrarPantallaRest by remember { mutableStateOf(false) }
-    var mediaPlayer = MediaPlayer.create(context, R.raw.sound_file_1)
-//    mediaPlayer.start()
+
     var miConterDown by remember {
         mutableStateOf(CounterDown(countdownTime) { newValue -> theCounter = newValue })
     }
@@ -103,10 +97,11 @@ fun Counter(modifier: Modifier = Modifier) {
                     mostrarPantallaGetReady = false
                     mostrarPantallaWork = true
                     startWorkCycle(
-                        countdownTime,
-                        restTime,
-                        currentCycle,
-                        cycleCount,
+                        context = context, // Pasamos el contexto aquí
+                        countdownTime = countdownTime,
+                        restTime = restTime,
+                        currentCycle = currentCycle,
+                        cycleCount = cycleCount,
                         onCounterUpdate = { miConterDown = it },
                         onRestingUpdate = { isResting = it },
                         onCurrentCycleUpdate = { currentCycle = it },
@@ -141,10 +136,11 @@ fun Counter(modifier: Modifier = Modifier) {
 }
 
 fun startWorkCycle(
+    context: Context,
     countdownTime: Int,
     restTime: Int,
     currentCycle: Int,
-    totalCycles: Int,
+    cycleCount: Int,
     onCounterUpdate: (CounterDown) -> Unit,
     onRestingUpdate: (Boolean) -> Unit,
     onCurrentCycleUpdate: (Int) -> Unit,
@@ -156,12 +152,21 @@ fun startWorkCycle(
 ) {
     onTimerRunningUpdate(true)
 
+    val mediaPlayer = MediaPlayer.create(context, R.raw.audio) // Reproduce el sonido cuando queden 3 segundos
+
     val workCounter = CounterDown(countdownTime) { workValue ->
         onCounterValueUpdate(workValue)
+
+        // Inicia el sonido cuando queden 3 segundos
+        if (workValue == 3L) {
+            mediaPlayer.start()
+        }
+
         if (workValue == 0L) {
             onRestingUpdate(true)
             onMostrarPantallaWorkUpdate(false)
             onMostrarPantallaRestUpdate(true)
+            mediaPlayer.stop()  // Detenemos el sonido después de que termine el trabajo
 
             val restCounter = CounterDown(restTime) { restValue ->
                 onCounterValueUpdate(restValue)
@@ -170,27 +175,25 @@ fun startWorkCycle(
                     onMostrarPantallaRestUpdate(false)
 
                     val nextCycle = currentCycle + 1
-                    if (nextCycle <= totalCycles) {
+                    if (nextCycle <= cycleCount) {
                         onCurrentCycleUpdate(nextCycle)
                         onMostrarPantallaWorkUpdate(true)
-
-                        // Iniciar el próximo ciclo de trabajo después del descanso
                         startWorkCycle(
-                            countdownTime,
-                            restTime,
-                            nextCycle,
-                            totalCycles,
-                            onCounterUpdate,
-                            onRestingUpdate,
-                            onCurrentCycleUpdate,
-                            onCounterValueUpdate,
-                            onTimerRunningUpdate,
-                            onMostrarPantallaWorkUpdate,
-                            onMostrarPantallaRestUpdate,
-                            onMostrarPantallaConfiguracionUpdate
+                            context = context,
+                            countdownTime = countdownTime,
+                            restTime = restTime,
+                            currentCycle = nextCycle,
+                            cycleCount = cycleCount,
+                            onCounterUpdate = onCounterUpdate,
+                            onRestingUpdate = onRestingUpdate,
+                            onCurrentCycleUpdate = onCurrentCycleUpdate,
+                            onCounterValueUpdate = onCounterValueUpdate,
+                            onTimerRunningUpdate = onTimerRunningUpdate,
+                            onMostrarPantallaWorkUpdate = onMostrarPantallaWorkUpdate,
+                            onMostrarPantallaRestUpdate = onMostrarPantallaRestUpdate,
+                            onMostrarPantallaConfiguracionUpdate = onMostrarPantallaConfiguracionUpdate
                         )
                     } else {
-                        // Finaliza los ciclos y regresa a la pantalla de configuración
                         onTimerRunningUpdate(false)
                         onMostrarPantallaConfiguracionUpdate(true)
                     }
@@ -203,7 +206,6 @@ fun startWorkCycle(
     onCounterUpdate(workCounter)
     workCounter.start()
 }
-
 
 @Composable
 fun PantallaConfiguracion(
@@ -342,18 +344,5 @@ fun PantallaRest(
         Button(onClick = { miConterDown.toggle() }) {
             Text(text = if (miConterDown.counterState) "Pausar" else "Reanudar")
         }
-    }
-}
-
-
-
-
-
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    HiitTimerTheme {
-        Counter()
     }
 }
